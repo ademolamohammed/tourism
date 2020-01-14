@@ -28,12 +28,26 @@ router
 
 router.route('/tour-stats').get(tourController.getTourStats)
 
-router.route('/getMonthlyPlan/:year').get(tourController.getMonthlyPlan)
+router.route('/getMonthlyPlan/:year').get(authController.protect, 
+			authController.restrictTo('admin','lead-guide','guides'),tourController.getMonthlyPlan)
+
+
+router.route('/tours-within/:distance/center/:latlng/unit/:unit').get(tourController.getToursWithin)
+router.route('/distances/:latlng/unit/:unit').get(tourController.getDistances)
 
 router
 	.route('/')
-	.get(authController.protect, tourController.getAllTours)
-	.post(//tourController.checkBody,
+	.get(tourController.getAllTours)
+
+
+
+
+	
+
+router.use(authController.protect)
+
+router.route('/').post(//tourController.checkBody,
+		  authController.restrictTo('admin','lead-guide'),
 		tourController.createTour)
 //app.route('/api/v1/tours').post(createTour)
 // app.route('/api/v1/tours/:id').get(getTour)
@@ -42,8 +56,12 @@ router
 router
 	.route('/:id')
 	.get(tourController.getTour)
-	.patch(tourController.updateTour)
-	.delete(authController.protect, authController.restrictTo('admin','lead-guide'), tourController.deleteTour)
+	.patch( authController.restrictTo('admin','lead-guide'),
+			tourController.uploadTourImages, 
+			tourController.resizeTourImages, 
+			tourController.updateTour)
+
+	.delete(authController.restrictTo('admin','lead-guide'), tourController.deleteTour)
 
 
 

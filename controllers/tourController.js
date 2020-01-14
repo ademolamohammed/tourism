@@ -2,9 +2,14 @@
 
 //const tours= JSON.parse(fs.readFileSync(`${__dirname}/../4-natours/after-section-06/dev-data/data/tours-simple.json`))
 const Tour = require('./../models/tourModel')
-const APIFeatures =require('./../utils/APIFeatures')
+// const APIFeatures =require('./../utils/APIFeatures')
+const multer = require('multer')
+const sharp = require('sharp') 
 const catchAsync = require('./../utils/catchAsync')
 const AppError= require ('./../utils/appError')
+const factory = require('./handlerFactory')
+
+
 // exports.checkID = (req,res,next,val) => {
 // 	console.log(`tour id is ${val}`)
 // 	if(req.params.id * 1>tours.length) {
@@ -13,9 +18,75 @@ const AppError= require ('./../utils/appError')
 //  			message: "invalid array lenght"
 //  		})
 //  	}
-//  	next()aaaaaaaaaaaaaaa
+//  	next()
 // }
 
+
+
+const multerStorage = multer.memoryStorage()	//here the image is stored in memory and not on the disk. and it is available
+//on req.buffer
+
+const multerFilter = (req,file,cb) => {
+	if (file.mimetype.startsWith('image')) {
+		cb(null,true)
+	}else {
+
+		cb(new AppError('Not an image,please upload an image',400),false)
+	}
+	}
+	
+const upload = multer({
+	storage: multerStorage,
+	fileFilter:multerFilter
+})
+
+
+
+exports.uploadTourImages = upload.fields([
+	{name:'imageCover', maxCount:1},
+	{name:'images', maxCount:3}
+])
+//Note when there is one file to be uploaded we use upload.single('image')
+//Note when there is multiple file to upload we use upload.array('image',5)
+//Note when there is a mix of files to upload we use upload.fields({
+	//{name:'imageCover', maxCount:1},
+	//{name:'images', maxCount:3}
+//})
+
+exports.resizeTourImages = catchAsync(async(req,res,next)=> {
+	//console.log(req.files)
+	if(!req.files.imageCover || !req.files.images) return next()
+		//console.log(req.files.imageCover)
+		// 1) Cover image
+
+	 req.body.imageCover =  `tours-${req.params.id}-${Date.now()}-cover.jpeg`
+   await sharp(req.files.imageCover[0].buffer)
+				.resize(2000,1333)
+				.toFormat('jpeg')
+				.jpeg({quality:90})
+				.toFile(`public/img/tours/${req.body.imageCover}`)
+
+
+		//2) Images  NOTE:: we tend to loop once we have two or more images
+	req.body.images = []
+
+	await Promise.all(
+
+				req.files.images.map(async(el,i)  => {
+				const filename = `tours-${req.params.id}-${Date.now()}-${i + 1}.jpeg`
+
+				await sharp(el.buffer)
+						.resize(2000,1333)
+						.toFormat('jpeg')
+						.jpeg({quality:90})
+						.toFile(`public/img/tours/${filename}`)
+
+				req.body.images.push(filename)
+				//console.log(req.files.imageCover)
+	}))
+
+	next()
+})
 
 exports.aliasTopTours = (req,res,next)=> {
 	req.query.limit = '5'
@@ -25,7 +96,10 @@ exports.aliasTopTours = (req,res,next)=> {
 	next()
 }
 
-exports.getAllTours = catchAsync(async (req,res,next)=> {
+
+
+exports.getAllTours = factory.getAll(Tour)
+//catchAsync(async (req,res,next)=> {
 
 	// 1A) filtering
 	// const queryObj = {...req.query}
@@ -76,23 +150,23 @@ exports.getAllTours = catchAsync(async (req,res,next)=> {
 	// const query =  Tour.find().where('duration').equals(5)
 	// 				.where('difficulty').equals('easy')
 	//console.log(req.requestTime)
-	const features= new APIFeatures(Tour.find(),req.query)
-	.filter()
-	.sort()
-	.limitFields()
-	.paginate()
-	const tour = await features.query
- res.status(200).json ({
- 	status: 'success',
- 	// results: tours.length,
- 	data:{
- 		   tour
-		// //tours:tours 	you can as well do like this
- 	}
- })
+// 	const features= new APIFeatures(Tour.find(),req.query)
+// 	.filter()
+// 	.sort()
+// 	.limitFields()
+// 	.paginate()
+// 	const tour = await features.query
+//  res.status(200).json ({
+//  	status: 'success',
+//  	// results: tours.length,
+//  	data:{
+//  		   tour
+// 		// //tours:tours 	you can as well do like this
+//  	}
+//  })
 
 
-})
+// })
 
 // exports.checkBody = (req,res,next)=> {
 // 	if (req.body.name == null || req.body.price == null ) {
@@ -105,82 +179,87 @@ exports.getAllTours = catchAsync(async (req,res,next)=> {
 // }
 
 
-exports.createTour = catchAsync(async (req,res,next)=> {
+// exports.createTour = catchAsync(async (req,res,next)=> {
 
 
-	// const newTour = new Tour({})
-	// newTour.save().then
+// 	// const newTour = new Tour({})
+// 	// newTour.save().then
 
-		const newTour = await Tour.create(req.body)
+// 		const newTour = await Tour.create(req.body)
 
-		if (! newTour) {
+// 		if (! newTour) {
 
-		return	next(new AppError('there is no tour with that id', 404))
-		}
+// 		return	next(new AppError('there is no tour with that id', 404))
+// 		}
 
- // const newId= tours[tours.length-1].id + 1
- //  const newTour = Object.assign({id:newId}, req.body)
- // tours.push(newTour)
- //  fs.writeFile(`${__dirname}/4-natours/after-section-06/dev-data/data/tours-simple.json`, JSON.stringify(tours), err=> { 
-	  	res.status(201).json({
-	 		status : "success",
-	 		data: {
-	 			tour: newTour
-	 		}
-	 	})
-	})
+//  // const newId= tours[tours.length-1].id + 1
+//  //  const newTour = Object.assign({id:newId}, req.body)
+//  // tours.push(newTour)
+//  //  fs.writeFile(`${__dirname}/4-natours/after-section-06/dev-data/data/tours-simple.json`, JSON.stringify(tours), err=> { 
+// 	  	res.status(201).json({
+// 	 		status : "success",
+// 	 		data: {
+// 	 			tour: newTour
+// 	 		}
+// 	 	})
+// 	})
+
+exports.createTour  = factory.createOne(Tour)
 	
  
 
 
-exports.getTour = catchAsync(async (req,res,next)=> { 
+// exports.getTour = catchAsync(async (req,res,next)=> { 
 
 	
 
-		const tour = await Tour.findById(req.params.id).populate('reviews')
-		// .populate({   //simply do .populate('guides')
-		// 	path: 'guides',
-		// 	select: '-__v -passwordChangedAt'
-		// })
+// 		const tour = await Tour.findById(req.params.id).populate('reviews')
+// 		// .populate({   //simply do .populate('guides')
+// 		// 	path: 'guides',
+// 		// 	select: '-__v -passwordChangedAt'
+// 		// })
 
-		if (!tour) {
+// 		if (!tour) {
 
-		return	next(new AppError('there is no tour with that id', 404))
-		}
-		//tour.findById({_id:req.params.id}) we could have use this but findById has simply things for us.. the _ is from mongod
-		res.status(200).json({
- 		status: "success",
- 		data: {
- 			tour
- 		}
- 	})
+// 		return	next(new AppError('there is no tour with that id', 404))
+// 		}
+// 		//tour.findById({_id:req.params.id}) we could have use this but findById has simply things for us.. the _ is from mongod
+// 		res.status(200).json({
+//  		status: "success",
+//  		data: {
+//  			tour
+//  		}
+//  	})
 	 
- 	//const id = req.params.id * 1
- 	// const tour =tours.find(el=> el.id == id)
+//  	//const id = req.params.id * 1
+//  	// const tour =tours.find(el=> el.id == id)
 
  	
  	
- })
+//  })
+exports.getTour =  factory.getOne(Tour,{path:'reviews'})
 
 
-exports.updateTour = catchAsync(async(req,res,next)=> {
+// exports.updateTour = catchAsync(async(req,res,next)=> {
 
-	const tour = await Tour.findByIdAndUpdate(req.params.id,req.body,{
-		new:true, runValidators:true
-	})
+// 	const tour = await Tour.findByIdAndUpdate(req.params.id,req.body,{
+// 		new:true, runValidators:true
+// 	})
  
-		if (!tour) {
+// 		if (!tour) {
 
-		return	next(new AppError('there is no tour with that id', 404))
-		}
-	res.status(200).json({
-		status:'success',
-		data:{
-			tour
-		}
-	})
+// 		return	next(new AppError('there is no tour with that id', 404))
+// 		}
+// 	res.status(200).json({
+// 		status:'success',
+// 		data:{
+// 			tour
+// 		}
+// 	})
 
-})
+// })
+
+exports.updateTour = factory.updateOne(Tour)
 
 // exports.deleteTour =  catchAsync(async (req,res,next)=> {
 
@@ -196,8 +275,75 @@ exports.updateTour = catchAsync(async(req,res,next)=> {
 // 		data: null
 // 	})
 
+exports.deleteTour = factory.deleteOne(Tour)
+
 	
 // })
+
+
+exports.getToursWithin = catchAsync(async(req,res,next)=> {
+	const {distance,latlng,unit} = req.params
+	const [lat,lng] = latlng.split(',')
+	if(!lat || !lng) {
+		next (new AppError('please provide latitude and longitude in the lat,lng format',400))
+	}
+
+	const radius = unit === 'mi'? distance/3963.2 : distance/6378.1
+	const tours = await Tour.find({
+		startLocation:{$geoWithin: {$centerSphere: [[lng,lat],radius]}}
+	})
+
+	res.status(200).json({
+		status:"success",
+		result:tours.length,
+		data: {
+			tours
+		}
+
+	})
+}) 
+
+
+exports.getDistances = catchAsync(async(req,res,next)=> {
+	const {latlng,unit} = req.params
+	const [lat,lng] = latlng.split(',')
+	const multiplier = unit === 'mi'? 0.000621371 : 0.001 
+	if(!lat || !lng) {
+		next (new AppError('please provide latitude and longitude in the lat,lng format',400))
+	}
+	const distances = await Tour.aggregate([
+	{
+		$geoNear: {
+			near: {
+				type:'Point',
+				coordinates: [lng *1,lat *1]
+			},
+			distanceField:  'distance',
+			distanceMultiplier: multiplier
+		}
+	},
+		{
+			$project: {	  //the project signifies the value that you want to let persist, here only distance will be displayed
+				distance:1,
+				name:1
+			}
+		}
+	
+
+		])
+
+	res.status(200).json({
+		status:"success",
+		data: {
+			distances
+		}
+
+	})
+})
+
+
+
+
 
 //NOTE::  go to the mongoose documentation and you can find all the query method you can have on a functio
 // important you must look up mongoose documentation

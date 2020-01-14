@@ -5,16 +5,26 @@ const authController = require('./../controllers/authController')
 
 
 
-const router = express.Router({ mergeParams:true})
+const router = express.Router({ mergeParams:true})  //parameters here would be accessible by the tours and routers
+
+router.use(authController.protect)
 
 router.route('/')
-.get(reviewController.getAllReviews)
+.get(reviewController.getAllReview)
 
-.post(authController.protect,
+.post(
 	authController.restrictTo('user'), 
+	reviewController.setToursUserId,
 	reviewController.createReview)
 
 
+
+router.route('/:id')
+	.get(reviewController.getReview)  
+	.delete(
+	authController.restrictTo('admin','user'), 
+	reviewController.deleteReview)
+	.patch(authController.restrictTo('user','admin'),reviewController.updateReview)
 
 
 

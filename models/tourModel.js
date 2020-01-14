@@ -1,5 +1,7 @@
 const mongoose=require('mongoose')
 //const user = require('./userModel')
+const slugify = require('slugify')
+
 const tourSchema = new mongoose.Schema({
 	name: {
 		type:String,
@@ -9,6 +11,7 @@ const tourSchema = new mongoose.Schema({
 		minlength:[10, 'a tour must have a length of above 10'],
 		maxlength:[40, 'a tour must have a length of less than']
 	},
+	slug:String,
 	duration:{
 		type:Number,
 		required:[true, 'must have a duration']
@@ -28,7 +31,10 @@ const tourSchema = new mongoose.Schema({
 	},
 	ratingsAverage:{
 		type: Number,
-		default:4.5
+		default:4.5,
+		min:[1,'ratings must be above 1.0'],
+		max:[5,'ratings must be greater than 5'],
+		set: val => Math.round(val *10)/10
 	},
 	ratingsQuantity:{
 		type:Number,
@@ -109,6 +115,21 @@ tourSchema.virtual('durationWeeks').get(function(){
 // this.guides = await Promise.all(guidesPromises)
 // 	next()
 // })
+
+
+//use to slugify i.e to turn the name of the tour into what can be reused
+tourSchema.pre('save',function(next) {
+	this.slug=slugify(this.name, {lower:true}) 
+	next();
+})
+
+//index({price:1}) use to order the price in an accending order -1 is order in a decending order, so that when we search
+//?price[gt]=1000, it would have arranged it orderly so much work wouldnt be done to give back the result has it wouldn't 
+//waste time running the all 9 search results, will only pick up the first three that matches the query
+tourSchema.index({price:1})
+tourSchema.index({price:1,  ratingsAverage:-1})
+tourSchema.index({slug:1})
+tourSchema.index({startLocation:'2dsphere'})  //use '2dindex'  if its just a frictional data and not a real point on earth  
 
 //populating your getAllTours with the guides into upon serching and not just only having thier id like it is on the default search
 tourSchema.pre(/^find/,function(next){

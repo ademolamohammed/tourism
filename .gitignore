@@ -1,0 +1,4 @@
+node_modules/
+*.env
+.cache
+4-natours/
