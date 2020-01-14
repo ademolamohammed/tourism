@@ -18,6 +18,8 @@ const cookieparser = require('cookie-parser') //used to parse data from cookies
 //NOTE==>to use middlewares, we go 'app.use' all app.use are middlewares
 const app=express()
 
+app.use(compress()) //use to compress all our code into a smaller less heavy fraction
+
 app.set('view engine', 'pug')  // pug is the templating engine we would be using
 
 //serving static files

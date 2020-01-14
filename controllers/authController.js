@@ -28,7 +28,7 @@ const createSendToken= (user,statusCode,res)=> {
 
 
 	
-if(process.env.NODE_ENV === 'production') cookieOption.secure = true //the if statement stops here
+if(process.env.NODE_ENV === 'production') cookieOption.secure = true //the if statement ends here
 
 	res.cookie('jwt',token,cookieOption)
 	user.password = undefined
