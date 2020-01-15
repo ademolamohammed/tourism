@@ -1,7 +1,8 @@
 const path = require('path') // use to access routes, use to know the actual path, works with __dir
 const express = require("express") // the application itself
 const morgan =require("morgan") //a middleware used for logging status and status codes to the console
-const compression = require("compression")
+const compression = require("compression") //for compressing code with use with heroku
+const cors = require("cors")
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit') //use to limit access to our application to a number of time specified
 const mongoSanitize = require('express-mongo-sanitize')
@@ -28,6 +29,19 @@ app.set('view engine', 'pug')  // pug is the templating engine we would be using
 //serving static files
 app.use(express.static(path.join(__dirname,'public'))) //note your css and images and javascript are in public so views could use 
 app.set('views', path.join(__dirname, 'views'))
+
+app.use(cors()) //for cors cross-origin resourse sharing, so api can be consumed by others
+
+//if one wants to allow api to only be used on one webpage
+//api/natours.com, front end www.natours.com..or probably the api and the website is hosted on different platform, then we use this
+// app.use(cors({
+// 	origin: 'www.natours.com'
+// })
+
+//using cors for non-simple requests like patch and delete  the browser will issue a preflight phase, and the request won't work 
+//but having this in place makes it work for all routes or a specific one.
+app.options('*', cors())
+app.options('/api/v1/tours/:id', cors())
 
 //set security HTTP headers
 app.use(helmet())

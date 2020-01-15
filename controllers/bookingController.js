@@ -16,7 +16,7 @@ const tour = await Tour.findById(req.params.tourId)
 //2) create checkout session
 const session =  await stripe.checkout.sessions.create({						// this are about the sesssions
 payment_method_types: ['card'],										
-success_url: `${req.protocol}://${req.get('host')}/?tour=${req.params.tourId}&user=${req.user.id}&price=${tour.price}`,
+success_url: `${req.protocol}://${req.get('host')}/my-tours?tour=${req.params.tourId}&user=${req.user.id}&price=${tour.price}`,
 // when te payment is sucesful, link to the	 homepage
 cancel_url: `${req.protocol}://${req.get('host')}/tour/${tour.slug}`, //when payment is cancelled or declined  link to the tour page
 customer_email:req.user.email,										
