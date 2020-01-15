@@ -1,6 +1,7 @@
 const path = require('path') // use to access routes, use to know the actual path, works with __dir
 const express = require("express") // the application itself
 const morgan =require("morgan") //a middleware used for logging status and status codes to the console
+const compression = require("compression")
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit') //use to limit access to our application to a number of time specified
 const mongoSanitize = require('express-mongo-sanitize')
@@ -18,7 +19,9 @@ const cookieparser = require('cookie-parser') //used to parse data from cookies
 //NOTE==>to use middlewares, we go 'app.use' all app.use are middlewares
 const app=express()
 
-app.use(compress()) //use to compress all our code into a smaller less heavy fraction
+app.enable('trust proxy') //this is used for heroku development
+
+app.use(compression()) //use to compress all our code into a smaller less heavy fraction
 
 app.set('view engine', 'pug')  // pug is the templating engine we would be using
 
