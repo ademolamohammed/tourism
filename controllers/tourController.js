@@ -2,7 +2,7 @@
 
 //const tours= JSON.parse(fs.readFileSync(`${__dirname}/../4-natours/after-section-06/dev-data/data/tours-simple.json`))
 const Tour = require('./../models/tourModel')
-// const APIFeatures =require('./../utils/APIFeatures')
+// const apiFeatures =require('./../utils/APIFeatures')
 const multer = require('multer')
 const sharp = require('sharp') 
 const catchAsync = require('./../utils/catchAsync')
